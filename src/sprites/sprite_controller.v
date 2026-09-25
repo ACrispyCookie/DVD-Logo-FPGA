@@ -44,58 +44,130 @@ module sprite_controller #(
     reg [1:0] frame_counter;
     reg [6:0] x_pos, y_pos;
     reg x_moving_right, y_moving_down;
-    reg [6:0] next_x_pos, next_y_pos;
-    reg next_x_moving_right, next_y_moving_down;
+    reg [6:0] auto_next_x_pos, auto_next_y_pos;
+    reg auto_next_x_moving_right, auto_next_y_moving_down;
+    reg [6:0] accel_next_x_pos, accel_next_y_pos;
+    reg accel_next_x_moving_right, accel_next_y_moving_down;
+    reg signed [12:0] accel_x_candidate, accel_y_candidate;
+    reg accel_horizontal_collision, accel_vertical_collision;
     reg [2:0] color;
 
     wire animation_tick;
-    wire horizontal_collision;
-    wire vertical_collision;
+    wire auto_horizontal_collision;
+    wire auto_vertical_collision;
+    wire movement_collision;
+    wire signed [11:0] x_accel_scaled;
+    wire signed [11:0] y_accel_scaled;
 
     assign animation_tick = frame_end && frame_counter == FRAME_INTERVAL;
-    assign horizontal_collision = (x_moving_right && x_pos >= MAX_X_POS)
-                                || (!x_moving_right && x_pos == 0);
-    assign vertical_collision = (y_moving_down && y_pos >= MAX_Y_POS)
-                              || (!y_moving_down && y_pos == 0);
+    assign auto_horizontal_collision = (x_moving_right && x_pos >= MAX_X_POS)
+                                     || (!x_moving_right && x_pos == 0);
+    assign auto_vertical_collision = (y_moving_down && y_pos >= MAX_Y_POS)
+                                   || (!y_moving_down && y_pos == 0);
+    assign movement_collision = accel_mode
+                              ? (accel_horizontal_collision || accel_vertical_collision)
+                              : (!edit_mode
+                                 && (auto_horizontal_collision || auto_vertical_collision));
+
+    // Match the Lab 4 control sensitivity: one pixel per 256 raw units.
+    assign x_accel_scaled = x_accel >>> 8;
+    assign y_accel_scaled = y_accel >>> 8;
 
     assign r = color[0];
     assign g = color[1];
     assign b = color[2];
 
-    // Compute a reflected step.  At an edge, move back into the valid area
-    // immediately instead of taking one out-of-bounds step with stale velocity.
+    // Compute the next automatic bounce step. At an edge, move back into
+    // the valid area immediately instead of applying stale velocity.
     always @(*) begin
-        next_x_pos = x_pos;
-        next_y_pos = y_pos;
-        next_x_moving_right = x_moving_right;
-        next_y_moving_down = y_moving_down;
+        auto_next_x_pos = x_pos;
+        auto_next_y_pos = y_pos;
+        auto_next_x_moving_right = x_moving_right;
+        auto_next_y_moving_down = y_moving_down;
 
         if (x_moving_right) begin
             if (x_pos >= MAX_X_POS) begin
-                next_x_pos = MAX_X_POS - 7'd1;
-                next_x_moving_right = 1'b0;
+                auto_next_x_pos = MAX_X_POS - 7'd1;
+                auto_next_x_moving_right = 1'b0;
             end else begin
-                next_x_pos = x_pos + 7'd1;
+                auto_next_x_pos = x_pos + 7'd1;
             end
         end else if (x_pos == 0) begin
-            next_x_pos = 7'd1;
-            next_x_moving_right = 1'b1;
+            auto_next_x_pos = 7'd1;
+            auto_next_x_moving_right = 1'b1;
         end else begin
-            next_x_pos = x_pos - 7'd1;
+            auto_next_x_pos = x_pos - 7'd1;
         end
 
         if (y_moving_down) begin
             if (y_pos >= MAX_Y_POS) begin
-                next_y_pos = MAX_Y_POS - 7'd1;
-                next_y_moving_down = 1'b0;
+                auto_next_y_pos = MAX_Y_POS - 7'd1;
+                auto_next_y_moving_down = 1'b0;
             end else begin
-                next_y_pos = y_pos + 7'd1;
+                auto_next_y_pos = y_pos + 7'd1;
             end
         end else if (y_pos == 0) begin
-            next_y_pos = 7'd1;
-            next_y_moving_down = 1'b1;
+            auto_next_y_pos = 7'd1;
+            auto_next_y_moving_down = 1'b1;
         end else begin
-            next_y_pos = y_pos - 7'd1;
+            auto_next_y_pos = y_pos - 7'd1;
+        end
+    end
+
+    // Apply the Lab 4 accelerometer step directly to the robust coordinate
+    // model. Signed intermediate values prevent wraparound, and each axis is
+    // clamped before framebuffer addresses are derived from the result.
+    always @(*) begin
+        accel_x_candidate = $signed({6'b0, x_pos})
+                          + $signed({x_accel_scaled[11], x_accel_scaled});
+        accel_y_candidate = $signed({6'b0, y_pos})
+                          + $signed({y_accel_scaled[11], y_accel_scaled});
+
+        accel_next_x_pos = x_pos;
+        accel_next_y_pos = y_pos;
+        accel_next_x_moving_right = x_moving_right;
+        accel_next_y_moving_down = y_moving_down;
+        accel_horizontal_collision = 1'b0;
+        accel_vertical_collision = 1'b0;
+
+        if (x_accel_scaled < 0) begin
+            if (accel_x_candidate <= 0) begin
+                accel_next_x_pos = 7'd0;
+                accel_next_x_moving_right = 1'b1;
+                accel_horizontal_collision = 1'b1;
+            end else begin
+                accel_next_x_pos = accel_x_candidate[6:0];
+                accel_next_x_moving_right = 1'b0;
+            end
+        end else if (x_accel_scaled > 0) begin
+            if (accel_x_candidate >= $signed({6'b0, MAX_X_POS})) begin
+                accel_next_x_pos = MAX_X_POS;
+                accel_next_x_moving_right = 1'b0;
+                accel_horizontal_collision = 1'b1;
+            end else begin
+                accel_next_x_pos = accel_x_candidate[6:0];
+                accel_next_x_moving_right = 1'b1;
+            end
+        end
+
+        if (y_accel_scaled < 0) begin
+            if (accel_y_candidate <= 0) begin
+                accel_next_y_pos = 7'd0;
+                accel_next_y_moving_down = 1'b1;
+                accel_vertical_collision = 1'b1;
+            end else begin
+                accel_next_y_pos = accel_y_candidate[6:0];
+                accel_next_y_moving_down = 1'b0;
+            end
+        end else if (y_accel_scaled > 0) begin
+            if (accel_y_candidate >= $signed({6'b0, MAX_Y_POS})) begin
+                accel_next_y_pos = MAX_Y_POS;
+                accel_next_y_moving_down = 1'b0;
+                accel_vertical_collision = 1'b1;
+            end else begin
+                accel_next_y_pos = accel_y_candidate[6:0];
+                accel_next_y_moving_down = 1'b1;
+            end
         end
     end
 
@@ -114,8 +186,7 @@ module sprite_controller #(
     always @(posedge clk) begin
         if (reset) begin
             color <= 3'b001;
-        end else if (animation_tick && !edit_mode
-                  && (horizontal_collision || vertical_collision)) begin
+        end else if (animation_tick && movement_collision) begin
             if (color == 3'b111) begin
                 color <= 3'b001;
             end else begin
@@ -133,13 +204,25 @@ module sprite_controller #(
             x_moving_right <= 1'b1;
             y_moving_down <= 1'b1;
         end else if (animation_tick) begin
-            if (!edit_mode) begin
-                x_pos <= next_x_pos;
-                y_pos <= next_y_pos;
-                x_moving_right <= next_x_moving_right;
-                y_moving_down <= next_y_moving_down;
-                start_pos <= next_y_pos * ROW_STRIDE + {7'd0, next_x_pos};
-                end_pos <= next_y_pos * ROW_STRIDE + {7'd0, next_x_pos} + SPRITE_SPAN;
+            // Acceleration mode has the same priority it had in Lab 4.
+            if (accel_mode) begin
+                x_pos <= accel_next_x_pos;
+                y_pos <= accel_next_y_pos;
+                x_moving_right <= accel_next_x_moving_right;
+                y_moving_down <= accel_next_y_moving_down;
+                start_pos <= accel_next_y_pos * ROW_STRIDE
+                           + {7'd0, accel_next_x_pos};
+                end_pos <= accel_next_y_pos * ROW_STRIDE
+                         + {7'd0, accel_next_x_pos} + SPRITE_SPAN;
+            end else if (!edit_mode) begin
+                x_pos <= auto_next_x_pos;
+                y_pos <= auto_next_y_pos;
+                x_moving_right <= auto_next_x_moving_right;
+                y_moving_down <= auto_next_y_moving_down;
+                start_pos <= auto_next_y_pos * ROW_STRIDE
+                           + {7'd0, auto_next_x_pos};
+                end_pos <= auto_next_y_pos * ROW_STRIDE
+                         + {7'd0, auto_next_x_pos} + SPRITE_SPAN;
             end else if (up_ctrl && y_pos > 0) begin
                 start_pos <= start_pos - ROW_STRIDE;
                 end_pos <= end_pos - ROW_STRIDE;
