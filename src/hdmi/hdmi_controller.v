@@ -41,14 +41,13 @@ module hdmi_controller (
 
     // Clock generation for pixel clock
     clk_wiz_0 clk_inst(.clk_in1(clk), .clk_out1(clk_pixel), .clk_out2(clk_pixel_x5), .locked(locked));
-    ResetDebouncer reset_debouncer_inst(.clk(clk_pixel), .input_bounce(~reset), .debounced(debounced_reset), .debounced_off(), .debounced_on());
-    InputDebouncer enable_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(enable), .debounced(debounced_enable), .posedge_pulse());
-    InputDebouncer edit_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(edit_mode), .debounced(debounced_edit), .posedge_pulse());
-    InputDebouncer accel_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(accel_mode), .debounced(debounced_accel), .posedge_pulse());
-    InputDebouncer up_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(up_ctrl), .debounced(up_debounced), .posedge_pulse());
-    InputDebouncer down_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(down_ctrl), .debounced(down_debounced), .posedge_pulse());
-    InputDebouncer left_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(left_ctrl), .debounced(left_debounced), .posedge_pulse());
-    InputDebouncer right_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(right_ctrl), .debounced(right_debounced), .posedge_pulse());
+    InputDebouncer enable_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(enable), .debounced(debounced_enable), .posedge_pulse());
+    InputDebouncer edit_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(edit_mode), .debounced(debounced_edit), .posedge_pulse());
+    InputDebouncer accel_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(accel_mode), .debounced(debounced_accel), .posedge_pulse());
+    InputDebouncer up_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(up_ctrl), .debounced(up_debounced), .posedge_pulse());
+    InputDebouncer down_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(down_ctrl), .debounced(down_debounced), .posedge_pulse());
+    InputDebouncer left_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(left_ctrl), .debounced(left_debounced), .posedge_pulse());
+    InputDebouncer right_debouncer_inst(.clk(clk_pixel), .reset(reset), .input_bounce(right_ctrl), .debounced(right_debounced), .posedge_pulse());
 
     // TMDS encoding & serializer
     rgb2dvi_0 rgb_inst(
@@ -67,7 +66,7 @@ module hdmi_controller (
     
     renderer renderer_inst(
         .clk(clk_pixel), 
-        .reset(debounced_reset), 
+        .reset(reset), 
         .accel_mode(debounced_accel),
         .edit_mode(debounced_edit),  
         .up_ctrl(up_debounced), 
@@ -88,7 +87,7 @@ module hdmi_controller (
     )
     pixel_controller_inst(
         .clk(clk_pixel), 
-        .reset(debounced_reset), 
+        .reset(reset), 
         .write_enable(write_enable), 
         .write_address(write_address), 
         .write_data(write_data), 
@@ -111,7 +110,7 @@ module hdmi_controller (
         .UPSCALE_CYCLES(4),
         .RESET_PIXEL(128)
     )
-    hsync_controller_inst(.clk(clk_pixel), .reset(debounced_reset), .enable(debounced_enable), .sync(hsync), .rgb_enabled(hrgb_enabled), .pixel(hpixel), .upscale_counter(hpixel_upscale_counter), .frame_end());
+    hsync_controller_inst(.clk(clk_pixel), .reset(reset), .enable(debounced_enable), .sync(hsync), .rgb_enabled(hrgb_enabled), .pixel(hpixel), .upscale_counter(hpixel_upscale_counter), .frame_end());
 
     // Vertical sync controller
     gsync_controller #(
@@ -124,6 +123,6 @@ module hdmi_controller (
         .UPSCALE_CYCLES(3999),
         .RESET_PIXEL(96)
     )
-    vsync_controller_inst(.clk(clk_pixel), .reset(debounced_reset), .enable(debounced_enable), .sync(vsync), .rgb_enabled(vrgb_enabled), .pixel(vpixel), .upscale_counter(), .frame_end(frame_end));
+    vsync_controller_inst(.clk(clk_pixel), .reset(reset), .enable(debounced_enable), .sync(vsync), .rgb_enabled(vrgb_enabled), .pixel(vpixel), .upscale_counter(), .frame_end(frame_end));
 
 endmodule
