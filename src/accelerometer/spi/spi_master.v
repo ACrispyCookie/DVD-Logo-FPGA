@@ -103,7 +103,7 @@ wire copy_output;
 
 assign copy_output = bit_counter == 3'd7 && sample_output;
 
-clock_divider clock_divider_inst(.clk(clk), .reset(reset), .new_clk(sclk), .locked_sync(sclk_started));
+clk_wiz_1 clock_divider_inst(.clk_in1(clk), .reset(reset), .clk_out1(sclk), .locked(sclk_started));
 
 always @(posedge clk or posedge reset) begin
     if (reset) begin
