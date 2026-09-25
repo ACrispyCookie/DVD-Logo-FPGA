@@ -2,6 +2,9 @@ module hdmi_controller (
     clk,
     reset,
     edit_mode, 
+    accel_mode,
+    x_accel,
+    y_accel, 
     up_ctrl,
     down_ctrl,
     left_ctrl,
@@ -12,8 +15,9 @@ module hdmi_controller (
     hdmi_clk_n
 );
 
-    input reset, clk, edit_mode;
+    input reset, clk, edit_mode, accel_mode;
     input up_ctrl, down_ctrl, left_ctrl, right_ctrl;
+    input signed [11:0] x_accel, y_accel;
 
     wire enable = 1'b1;
     output [2:0] hdmi_tx_p;
@@ -40,6 +44,7 @@ module hdmi_controller (
     ResetDebouncer reset_debouncer_inst(.clk(clk_pixel), .input_bounce(~reset), .debounced(debounced_reset), .debounced_off(), .debounced_on());
     InputDebouncer enable_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(enable), .debounced(debounced_enable), .posedge_pulse());
     InputDebouncer edit_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(edit_mode), .debounced(debounced_edit), .posedge_pulse());
+    InputDebouncer accel_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(accel_mode), .debounced(debounced_accel), .posedge_pulse());
     InputDebouncer up_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(up_ctrl), .debounced(up_debounced), .posedge_pulse());
     InputDebouncer down_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(down_ctrl), .debounced(down_debounced), .posedge_pulse());
     InputDebouncer left_debouncer_inst(.clk(clk_pixel), .reset(debounced_reset), .input_bounce(left_ctrl), .debounced(left_debounced), .posedge_pulse());
@@ -63,11 +68,14 @@ module hdmi_controller (
     renderer renderer_inst(
         .clk(clk_pixel), 
         .reset(debounced_reset), 
+        .accel_mode(debounced_accel),
         .edit_mode(debounced_edit),  
         .up_ctrl(up_debounced), 
         .down_ctrl(down_debounced), 
         .left_ctrl(left_debounced), 
-        .right_ctrl(right_debounced), 
+        .right_ctrl(right_debounced),
+        .x_accel(x_accel),
+        .y_accel(y_accel),
         .frame_end(frame_end), 
         .write_enable(write_enable), 
         .write_address(write_address), 

@@ -2,10 +2,13 @@ module renderer (
     clk,
     reset,
     edit_mode,
+    accel_mode,
     up_ctrl,
     down_ctrl,
     left_ctrl,
     right_ctrl,
+    x_accel,
+    y_accel,
     frame_end,
     write_enable,
     write_address,
@@ -18,8 +21,9 @@ module renderer (
     parameter Y_BOUNDARY = 7'd95;
 
     input clk, reset;
-    input frame_end, edit_mode;
+    input frame_end, edit_mode, accel_mode;
     input up_ctrl, down_ctrl, left_ctrl, right_ctrl;
+    input signed [11:0] x_accel, y_accel;
     output reg [13:0] write_address;
     output reg [2:0] write_data;
     output reg write_enable;
@@ -34,8 +38,8 @@ module renderer (
     sprite_controller #(
         .X_BOUNDARY(X_BOUNDARY),
         .Y_BOUNDARY(Y_BOUNDARY)
-    ) sprite_controller_inst(.clk(clk), .reset(reset), .edit_mode(edit_mode), .frame_end(frame_end),
-    .up_ctrl(up_ctrl), .down_ctrl(down_ctrl), .left_ctrl(left_ctrl), .right_ctrl(right_ctrl),
+    ) sprite_controller_inst(.clk(clk), .reset(reset), .edit_mode(edit_mode), .accel_mode(accel_mode), .x_accel(x_accel), .y_accel(y_accel),
+    .frame_end(frame_end), .up_ctrl(up_ctrl), .down_ctrl(down_ctrl), .left_ctrl(left_ctrl), .right_ctrl(right_ctrl),
     .start_pos(start_pos), .end_pos(end_pos), .r(r), .g(g), .b(b));
 
     always @(write_enable or write_address or start_pos or end_pos) begin
