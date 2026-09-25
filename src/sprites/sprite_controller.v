@@ -9,10 +9,13 @@ module sprite_controller #(
     clk,
     reset,
     edit_mode,
+    accel_mode,
     up_ctrl,
     down_ctrl,
     left_ctrl,
     right_ctrl,
+    x_accel,
+    y_accel,
     frame_end,
     start_pos,
     end_pos,
@@ -31,7 +34,8 @@ module sprite_controller #(
     localparam [13:0] END_POS = START_POS + SPRITE_SPAN;
     localparam [1:0] FRAME_INTERVAL = 2'b10;
 
-    input clk, reset, edit_mode;
+    input clk, reset, edit_mode, accel_mode;
+    input signed [11:0] x_accel, y_accel;
     input up_ctrl, down_ctrl, left_ctrl, right_ctrl;
     input frame_end;
     output reg [13:0] start_pos, end_pos;

@@ -8,7 +8,6 @@ module top (
     sclk, 
     mosi, 
     ss, 
-    enable, 
     edit_mode, 
     accel_mode, 
     up_ctrl, 
@@ -24,7 +23,8 @@ module top (
 input clk, reset, miso;
 input edit_mode, accel_mode;
 input up_ctrl, down_ctrl, left_ctrl, right_ctrl;
-output vga_red, vga_green, vga_blue, vga_hsync, vga_vsync;
+output [2:0] hdmi_tx_p, hdmi_tx_n;
+output hdmi_clk_p, hdmi_clk_n;
 output wire TxD, sclk, mosi, ss;
 wire enable = 1'b1;
 

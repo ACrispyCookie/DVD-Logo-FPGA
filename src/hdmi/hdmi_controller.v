@@ -1,6 +1,7 @@
 module hdmi_controller (
     clk,
     reset,
+    enable,
     edit_mode, 
     accel_mode,
     x_accel,
@@ -15,11 +16,10 @@ module hdmi_controller (
     hdmi_clk_n
 );
 
-    input reset, clk, edit_mode, accel_mode;
+    input reset, clk, enable, edit_mode, accel_mode;
     input up_ctrl, down_ctrl, left_ctrl, right_ctrl;
     input signed [11:0] x_accel, y_accel;
 
-    wire enable = 1'b1;
     output [2:0] hdmi_tx_p;
     output [2:0] hdmi_tx_n;
     output hdmi_clk_p;
