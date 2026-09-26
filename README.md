@@ -5,131 +5,111 @@
 ![HDMI](https://img.shields.io/badge/HDMI-640%C3%97480-purple)
 ![FPGA](https://img.shields.io/badge/FPGA-Smart_Zynq_SL-teal)
 
-A Verilog HDMI graphics demo that renders a BRAM-backed DVD logo, moves it across the screen, reflects it at each boundary, and changes its color on collisions. The design outputs a 640×480 HDMI signal from a 128×96 logical framebuffer, with each logical pixel enlarged 5× in both dimensions.
+An interactive FPGA graphics system for the Smart Zynq SL. It renders a complete 51×23 DVD logo from BRAM, drives a 640×480 HDMI display, and supports automatic bouncing, push-button positioning, or motion control from the board's SPI accelerometer. Sensor readings are also formatted and streamed over UART at 57,600 baud.
+
+The renderer works on a 128×96 logical framebuffer and expands every logical pixel into a 5×5 block. Position updates occur between completed frames, while bounded coordinate arithmetic keeps the full sprite on screen and changes its color when it reaches an edge.
 
 ## From ECE333 Lab 4 to HDMI
 
-This project extends the final system from [ECE333 — Digital Systems Lab](https://github.com/ACrispyCookie/ECE333-Digital-Systems-Lab). In that course repository, Lab 3 introduced the VGA timing and BRAM graphics pipeline, while the custom Lab 4 extension connected an SPI accelerometer to the sprite renderer so physical board movement could control an on-screen image.
+This project develops the display and accelerometer work from [ECE333 — Digital Systems Lab](https://github.com/ACrispyCookie/ECE333-Digital-Systems-Lab) into a standalone HDMI design. Lab 3 established the VGA timing and BRAM graphics pipeline; the custom Lab 4 extension then connected the board's accelerometer to an on-screen sprite.
 
-This standalone design carries that graphics work forward in a different direction:
+The current design brings those ideas together on the Smart Zynq SL:
 
-- VGA output is replaced by HDMI through the Digilent RGB-to-DVI pipeline.
-- The framebuffer and sprite remain BRAM-backed.
-- The 51×23 DVD logo moves automatically and changes color when it hits an edge.
-- Edit mode allows direct movement with the directional inputs.
-- Sprite updates are synchronized to completed frames to avoid changing position during active rendering.
-- Collision handling keeps the complete sprite, including its final ROM row, inside the 128×96 logical display.
+- HDMI replaces VGA through Digilent's RGB-to-DVI encoder and serializer.
+- A 51×23 sprite is stored in BRAM and composited into a 128×96 RGB framebuffer.
+- Automatic mode reflects the logo at every boundary and cycles its color on impact.
+- Accelerometer mode reads signed X/Y motion over 5 MHz SPI and moves the logo with edge clamping.
+- Edit mode provides direct four-direction positioning from the board controls.
+- X, Y, Z, and temperature measurements are continuously formatted for a UART terminal.
 
 ## Architecture
 
 ```text
-buttons
-  │
-  ▼
-input synchronization / debouncing
-  │
-  ▼
-sprite_controller ── position, direction, collision, color
-  │
-  ▼
-renderer + sprite_vram ── rebuild 128×96 RGB framebuffer
-  │
-  ▼
-pixel_controller ── read framebuffer and upscale 5×
-  │
-  ├── horizontal / vertical sync controllers
-  │
-  ▼
-24-bit RGB + sync ── rgb2dvi_0 ── HDMI TMDS output
+                         ┌─────────────── 57,600-baud UART ───────► TxD
+                         │
+ADXL362 ── 5 MHz SPI ──► value_reader ── averaging / ASCII formatting
+                         │
+                         └── signed X/Y acceleration
+                                      │
+buttons / mode switches ── sync + debounce
+                                      │
+                                      ▼
+                             sprite_controller
+                      position • collision • color • modes
+                                      │
+                                      ▼
+                     renderer + sprite/framebuffer BRAM
+                                      │
+                                      ▼
+                      pixel_controller + 5× upscaling
+                                      │
+                                      ▼
+                  640×480 timing ──► rgb2dvi_0 ──► HDMI
 ```
 
-### Display pipeline
-
-- [`src/sprite_controller.v`](src/sprite_controller.v) owns the logo position, automatic direction, manual controls, collision response, and color sequence.
-- [`src/renderer.v`](src/renderer.v) scans the logical framebuffer and combines the sprite mask with its current color.
-- [`src/vram/`](src/vram/) contains the sprite ROM and the red, green, and blue framebuffer planes implemented with Xilinx `RAMB18E1` primitives.
-- [`src/pixel_controller.v`](src/pixel_controller.v) addresses the logical framebuffer while the sync controllers expand each logical pixel to a 5×5 block.
-- [`src/hdmi/gsync_fsm.v`](src/hdmi/gsync_fsm.v) and [`src/hdmi/gsync_controller.v`](src/hdmi/gsync_controller.v) generate the 640×480 timing and frame boundary used by the animation.
-- [`src/hdmi_controller.v`](src/hdmi_controller.v) is the top-level module and connects clocking, controls, rendering, video timing, and HDMI serialization.
+- [`src/top.v`](src/top.v) connects reset conditioning, SPI acquisition, UART output, and the HDMI subsystem.
+- [`src/accelerometer/`](src/accelerometer/) initializes the sensor, reads and averages its channels, and transmits the formatted measurements.
+- [`src/sprites/sprite_controller.v`](src/sprites/sprite_controller.v) applies the active control mode, enforces the legal `X=0..77` and `Y=0..73` range, and derives framebuffer addresses.
+- [`src/sprites/renderer.v`](src/sprites/renderer.v) combines the current sprite mask and color with the logical framebuffer.
+- [`src/sprites/vram/`](src/sprites/vram/) contains the sprite ROM and RGB framebuffer planes built from Xilinx `RAMB18E1` blocks.
+- [`src/hdmi/`](src/hdmi/) generates video timing, reads the framebuffer, and feeds 24-bit RGB plus sync signals to `rgb2dvi_0`.
 
 ## Repository layout
 
 ```text
 .
 ├── README.md
-├── smart-zynq-sl.xdc       # board clock, controls, and HDMI pin mapping
-└── src/
-    ├── hdmi_controller.v   # top-level design
-    ├── renderer.v          # framebuffer redraw engine
-    ├── pixel_controller.v  # framebuffer reader and 5× upscaler
-    ├── sprite_controller.v # motion, controls, collision, and color
-    ├── debouncers/          # input synchronizers and debouncers
-    ├── hdmi/                # horizontal/vertical timing logic
-    └── vram/                # sprite ROM and RGB framebuffer BRAMs
+├── smart-zynq-sl.xdc             # clock, controls, SPI, UART, and HDMI pins
+├── src/
+│   ├── top.v                     # complete board-level integration
+│   ├── accelerometer/
+│   │   ├── spi/                  # 5 MHz SPI master
+│   │   ├── uart/                 # ASCII output and 57,600-baud transmitter
+│   │   ├── value_reader.v        # sensor initialization and sample sequencing
+│   │   └── avg_calc.v            # X/Y/Z/temperature averaging
+│   ├── debouncers/               # reset and control input conditioning
+│   ├── hdmi/                     # video timing and HDMI pipeline
+│   └── sprites/                  # motion, rendering, sprite ROM, and framebuffer
+└── tb/                           # focused SPI, UART, and sprite regressions
 ```
 
 ## Controls
 
-The top-level ports expose:
+The mode inputs are prioritized as **accelerometer → automatic → edit**. Enabling `accel_mode` therefore overrides `edit_mode`; with acceleration disabled, `edit_mode=0` selects the normal bouncing animation and `edit_mode=1` enables the directional controls.
 
-| Input | Function |
-| --- | --- |
-| `reset` | Reset input, adapted for the board's active-low reset button in the top level. |
-| `edit_mode` | Select manual positioning instead of automatic animation. |
-| `up_ctrl` | Move the logo upward in edit mode. |
-| `down_ctrl` | Move the logo downward in edit mode. |
-| `left_ctrl` | Move the logo left in edit mode. |
-| `right_ctrl` | Move the logo right in edit mode. |
+| Board input | Top-level port | Function |
+| --- | --- | --- |
+| Reset button | `reset` | Active-low board reset; conditioned into the active-high internal reset. |
+| Mode switch | `accel_mode` | Move from signed X/Y accelerometer readings. |
+| Mode switch | `edit_mode` | Select manual positioning when accelerometer mode is off. |
+| Up button | `up_ctrl` | Move one logical pixel upward in edit mode. |
+| Down button | `down_ctrl` | Move one logical pixel downward in edit mode. |
+| Left button | `left_ctrl` | Move one logical pixel left in edit mode. |
+| Right button | `right_ctrl` | Move one logical pixel right in edit mode. |
 
-The inputs are synchronized and debounced in the pixel-clock domain before they reach the renderer.
+Controls are synchronized and debounced before use. Sprite movement is applied on the animation tick derived from the end of a video frame, preventing mid-frame position changes.
 
 ## Requirements
 
-For the complete FPGA design:
-
-- Xilinx Vivado
-- Smart Zynq SL board files or the equivalent device selection
-- Digilent `rgb2dvi` IP
+- Xilinx Vivado with support for the Smart Zynq SL's `xc7z020clg484-1`
+- Digilent RGB-to-DVI IP (`rgb2dvi`)
 - Vivado Clocking Wizard IP
-
-For lightweight RTL checks:
-
-- Icarus Verilog, or
-- Verilator
+- HDMI display and cable
+- Serial terminal capable of **57,600 baud, 8 data bits, even parity, 1 stop bit**
 
 ## Vivado setup
 
-The repository contains the hand-written RTL and board constraints, but not generated Vivado IP output products. To recreate the project:
+The repository provides the hand-written RTL and [`smart-zynq-sl.xdc`](smart-zynq-sl.xdc); generated Vivado IP output products are created locally.
 
-1. Create a Vivado RTL project for the target Smart Zynq SL device.
-2. Add the Verilog sources from `src/` and its `debouncers/`, `hdmi/`, and `vram/` directories.
-3. Add [`smart-zynq-sl.xdc`](smart-zynq-sl.xdc) as the constraints file.
-4. Generate a Clocking Wizard instance named `clk_wiz_0` with the ports used by [`src/hdmi_controller.v`](src/hdmi_controller.v):
-   - `clk_in1`
-   - `clk_out1` for the pixel clock
-   - `clk_out2` for the 5× serial clock
-   - `locked`
-5. Add the Digilent RGB-to-DVI IP and name the instance `rgb2dvi_0`.
-6. Set `hdmi_controller` as the top-level module.
-7. Run synthesis, implementation, bitstream generation, and program the board.
+1. Create an RTL project targeting `xc7z020clg484-1`.
+2. Add every Verilog source under [`src/`](src/) and add [`smart-zynq-sl.xdc`](smart-zynq-sl.xdc).
+3. Set [`top`](src/top.v) as the project top module.
+4. Generate a Clocking Wizard named `clk_wiz_0` from the 50 MHz board clock with:
+   - `clk_out1 = 25.175 MHz` for the 640×480 pixel clock
+   - `clk_out2 = 125.875 MHz` for 5× TMDS serialization
+   - the `locked` output enabled
+5. Add Digilent's RGB-to-DVI IP as `rgb2dvi_0`, configured for the pixel and 5× serial clocks used in [`src/hdmi/hdmi_controller.v`](src/hdmi/hdmi_controller.v).
+6. Run synthesis, implementation, and bitstream generation, then program the board.
+7. Connect the HDMI output. To observe sensor telemetry as well, open the board's UART output at **57,600 8E1**.
 
-The supplied constraint declares a 50 MHz input clock. For the current 640×480 timing, configure the clock outputs for the pixel clock and its 5× TMDS serialization clock used by the RGB-to-DVI block.
-
-## Lightweight RTL checks
-
-The vendor-independent controller modules can be checked without a Vivado project:
-
-```bash
-iverilog -g2012 -Wall -tnull src/sprite_controller.v
-iverilog -g2012 -Wall -tnull \
-  src/hdmi/gsync_fsm.v \
-  src/hdmi/gsync_controller.v
-
-verilator --lint-only -Wall src/sprite_controller.v
-```
-
-Full top-level elaboration requires the generated `clk_wiz_0` and `rgb2dvi_0` modules together with the Xilinx simulation libraries for the `RAMB18E1` primitives.
-
-## Design lineage
-
-The commit history preserves the HDMI controller's development from its original introduction in the ECE338 parallel-computer-architecture project: initial framebuffer and timing logic, the first custom TMDS path, migration to Digilent's HDMI IP, timing and reset corrections, and the later collision and sprite-boundary fixes. The underlying graphics architecture traces back to the VGA and accelerometer-controlled sprite work in ECE333 Lab 4.
+After reset is released, the design initializes the accelerometer, starts periodic sampling, updates the UART display, and supplies signed X/Y values to the sprite controller. Leave both mode switches low for the automatic DVD animation, enable `accel_mode` to steer by tilting the board, or enable `edit_mode` alone for button control.
