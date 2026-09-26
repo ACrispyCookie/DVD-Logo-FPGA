@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 // Module: baud_controller                                                                                    //
 //                                                                                                            //
 // DESCRIPTION:                                                                                               //
@@ -15,18 +17,20 @@ reg [14:0] counter;
 reg [14:0] limit;
 reg counter_reset;
 
-// limits are -1 of the actual value, because the counter starts from 0 //
-always @(baud_select)
+// 16x oversampling limits for the board's 50 MHz input clock. Limits are
+// one less than the cycle count because the counter starts at zero.
+always @(*)
 begin
     case (baud_select) 
-        3'b000: limit = 20832;
-        3'b001: limit = 5207;
-        3'b010: limit = 1301;  
-        3'b011: limit = 650;   
-        3'b100: limit = 325;   
-        3'b101: limit = 162;     
-        3'b110: limit = 108;     
-        3'b111: limit = 53;
+        3'b000: limit = 10416; // 300 baud
+        3'b001: limit = 2603;  // 1,200 baud
+        3'b010: limit = 650;   // 4,800 baud
+        3'b011: limit = 325;   // 9,600 baud
+        3'b100: limit = 162;   // 19,200 baud
+        3'b101: limit = 80;    // 38,400 baud
+        3'b110: limit = 53;    // 57,600 baud
+        3'b111: limit = 26;    // 115,200 baud
+        default: limit = 53;
     endcase 
 end
 

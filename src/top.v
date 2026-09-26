@@ -49,6 +49,7 @@ wire [7:0] spi_transmit_data;
 /* SPI master outputs */
 wire spi_ready;
 wire [7:0] received_data;
+wire debounced_reset;
 
 ResetDebouncer reset_debouncer_inst(.clk(clk), .input_bounce(~reset), .debounced(debounced_reset), .debounced_off(), .debounced_on());
 

@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 /*
 This module acts as a controller for sending SPI commands, addresses, and 
 data to a slave device. It coordinates the data transmission process through
