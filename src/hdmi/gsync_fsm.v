@@ -29,7 +29,7 @@ module gsync_fsm #(
     reg [COUNTER_WIDTH-1:0] counter;
     reg state_end;
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             counter <= 0;
         end else if (!enable || state_end) begin
@@ -39,7 +39,7 @@ module gsync_fsm #(
         end
     end
 
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             current_state <= IDLE;
         end else begin

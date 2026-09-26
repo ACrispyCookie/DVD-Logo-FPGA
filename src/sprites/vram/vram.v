@@ -1,17 +1,37 @@
-module vram(
-    input clk,
-    input reset,
-    input write_enable,
-    input [13:0] write_address,
-    input [13:0] read_address,
-    input [2:0] write_data, 
-    output wire [15:0] r,
-    output wire [15:0] g,
-    output wire [15:0] b
+`timescale 1ns/1ps
+
+module vram (
+    input wire clk,
+    input wire reset,
+    input wire write_enable,
+    input wire [19:0] write_address,
+    input wire [2:0] write_data,
+    input wire [19:0] read_address,
+    output reg r,
+    output reg g,
+    output reg b
 );
+    `include "video_config.vh"
 
-vram_red vram_red_inst(.clk(clk), .reset(reset), .write_enable(write_enable), .write_address(write_address), .write_data(write_data[2]), .read_address(read_address), .out(r));
-vram_green vram_green_inst(.clk(clk), .reset(reset), .write_enable(write_enable), .write_address(write_address), .write_data(write_data[1]), .read_address(read_address), .out(g));
-vram_blue vram_blue_inst(.clk(clk), .reset(reset), .write_enable(write_enable), .write_address(write_address), .write_data(write_data[0]), .read_address(read_address), .out(b));
+    (* ram_style = "block" *) reg red_memory [0:VIDEO_FRAME_PIXELS-1];
+    (* ram_style = "block" *) reg green_memory [0:VIDEO_FRAME_PIXELS-1];
+    (* ram_style = "block" *) reg blue_memory [0:VIDEO_FRAME_PIXELS-1];
 
+    always @(posedge clk) begin
+        if (write_enable) begin
+            red_memory[write_address] <= write_data[2];
+            green_memory[write_address] <= write_data[1];
+            blue_memory[write_address] <= write_data[0];
+        end
+
+        if (reset) begin
+            r <= 1'b0;
+            g <= 1'b0;
+            b <= 1'b0;
+        end else begin
+            r <= red_memory[read_address];
+            g <= green_memory[read_address];
+            b <= blue_memory[read_address];
+        end
+    end
 endmodule

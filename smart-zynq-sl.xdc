@@ -1,5 +1,8 @@
 set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports clk]
 create_clock -period 20.000 -name sys_clk -waveform {0.000 10.000} -add [get_ports clk]
+set_clock_groups -asynchronous \
+    -group [get_clocks sys_clk] \
+    -group [get_clocks -include_generated_clocks pixel_unbuffered]
 set_property -dict {PACKAGE_PIN K21 IOSTANDARD LVCMOS33} [get_ports reset]
 set_property PULLDOWN true [get_ports reset]
 

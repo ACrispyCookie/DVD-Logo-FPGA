@@ -19,7 +19,7 @@ module gsync_controller #(
 );
     input clk, reset, enable;
     output wire rgb_enabled, sync;
-    output reg [6:0] pixel;
+    output reg [10:0] pixel;
     output reg [UPSCALE_WIDTH-1:0] upscale_counter;
     output wire frame_end;
     
@@ -44,11 +44,11 @@ module gsync_controller #(
 
     always @(posedge clk) begin
         if (reset) begin
-            pixel <= 7'b0;
+            pixel <= 11'd0;
         end else if (!enable || pixel == RESET_PIXEL) begin
-            pixel <= 7'b0;
+            pixel <= 11'd0;
         end else if (rgb_enabled && upscale_counter == UPSCALE_CYCLES) begin
-            pixel <= pixel + 7'b1;
+            pixel <= pixel + 11'd1;
         end
     end
     

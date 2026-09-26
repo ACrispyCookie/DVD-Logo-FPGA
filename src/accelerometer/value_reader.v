@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 /*
 This module acts as a controller for reading sensor data and calculating 
 averages over time. It coordinates with the `command_sender` module to send 
