@@ -9,6 +9,12 @@ An interactive FPGA graphics system for the Smart Zynq SL. It renders a complete
 
 The renderer works on a 128×96 logical framebuffer and expands every logical pixel into a 5×5 block. Position updates occur between completed frames, while bounded coordinate arithmetic keeps the full sprite on screen and changes its color when it reaches an edge.
 
+**Demo: tilting the board steers the logo**
+
+https://github.com/user-attachments/assets/1549df07-594a-4e26-9d4d-d74dd1c7e6ee
+
+*Recorded on the original ECE333 version (Nexys A7, VGA). This repository is its HDMI port for the Smart Zynq SL.*
+
 ## From ECE333 Lab 4 to HDMI
 
 This project develops the display and accelerometer work from [ECE333 — Digital Systems Lab](https://github.com/ACrispyCookie/ECE333-Digital-Systems-Lab) into a standalone HDMI design. Lab 3 established the VGA timing and BRAM graphics pipeline; the custom Lab 4 extension then connected the board's accelerometer to an on-screen sprite.
