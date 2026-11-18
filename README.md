@@ -1,9 +1,9 @@
 # DVD Logo FPGA
 
-![Verilog](https://img.shields.io/badge/Verilog-RTL-blue)
-![Vivado](https://img.shields.io/badge/Xilinx-Vivado-F15B2A)
-![HDMI](https://img.shields.io/badge/HDMI-640%C3%97480-purple)
-![FPGA](https://img.shields.io/badge/FPGA-Smart_Zynq_SL-teal)
+![Verilog](https://img.shields.io/badge/Verilog-0E7C86?style=flat&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik04IDZsLTYgNiA2IDZNMTYgNmw2IDYtNiA2IiBzdHJva2Utd2lkdGg9IjIuNCIvPjwvc3ZnPg==)
+![Vivado](https://img.shields.io/badge/Vivado-8A6D2B?style=flat&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xNC43IDYuM2E0IDQgMCAwIDAtNS40IDUuMkwzIDE3LjhWMjFoMy4ybDYuMy02LjNhNCA0IDAgMCAwIDUuMi01LjRsLTIuNiAyLjYtMi40LS42LS42LTIuNHoiLz48L3N2Zz4=)
+![HDMI](https://img.shields.io/badge/HDMI-2E7D5B?style=flat&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjIuNSIgeT0iNCIgd2lkdGg9IjE5IiBoZWlnaHQ9IjEzIiByeD0iMiIvPjxwYXRoIGQ9Ik04IDIxaDhNMTIgMTd2NCIvPjwvc3ZnPg==)
+![Smart Zynq SL](https://img.shields.io/badge/Smart%20Zynq%20SL-2E7D5B?style=flat&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjYiIHk9IjYiIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiIgcng9IjIiLz48cmVjdCB4PSI5LjUiIHk9IjkuNSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IndoaXRlIiBzdHJva2U9Im5vbmUiLz48cGF0aCBkPSJNOSAydjNNMTUgMnYzTTkgMTl2M00xNSAxOXYzTTIgOWgzTTIgMTVoM00xOSA5aDNNMTkgMTVoMyIvPjwvc3ZnPg==)
 
 An interactive FPGA graphics system for the Smart Zynq SL. It renders a complete 51×23 DVD logo from BRAM, drives a 640×480 HDMI display, and supports automatic bouncing, push-button positioning, or motion control from the board's SPI accelerometer. Sensor readings are also formatted and streamed over UART at 57,600 baud.
 
